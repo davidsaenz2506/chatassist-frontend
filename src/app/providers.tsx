@@ -37,7 +37,8 @@ const theme = extendTheme({
       variants: {
         outline: {
           field: {
-            bgColor: 'white',
+            borderRadius: "15px",
+            bgColor: '#F4F4F4',
             height: '60px',
             _focus: {
               borderColor: "primary.500",
