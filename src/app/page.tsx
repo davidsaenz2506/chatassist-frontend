@@ -2,29 +2,41 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
-  Avatar,
   Box,
   Button,
   Input,
+  Text,
   InputGroup,
   InputRightElement,
   Spinner,
-  Text,
+  Image,
 } from "@chakra-ui/react";
+
+import { IThreadMessage } from "@/domain/entities/message";
+import { IThread } from "@/domain/entities/thread";
+
 import SonoraInfo from "../components/SonoraInfo";
 import Dialog from "../components/Dialog";
+import ThreadList from "../components/Home/ThreadList";
+import MessageContainer from "@/components/Home/MessageContainer";
+
+import SonoraGif from "../../public/sonora-loading.gif";
+
 import CreateThread from "./api/thread/create/route";
 import GetThreadMessages from "./api/thread/getThreadMessages/route";
-import { IMessageContent, IThreadMessage } from "@/domain/entities/message";
 import SendMessageToThread from "./api/thread/sendMessageToThread/route";
+import GetAllThreads from "./api/thread/get/route";
 
 const Home = () => {
-  const [currentThread, setCurrentThread] = useState<string>(
-    "thread_hVw1HODLgYL1m42ucKXiSTjq"
-  );
+  const [currentUserThreads, setCurrentUserThreads] = useState<IThread[]>([]);
+  const [currentThread, setCurrentThread] = useState<string>("");
   const [currentThreadMessages, setCurrentThreadMessages] = useState<
     IThreadMessage[]
   >([]);
+  const [loadingThreads, setLoadingThreads] = useState<boolean>(false);
+  const [isGettingThreadMessages, setIsGettingThreadMessages] =
+    useState<boolean>(false);
+  const [isCreatingThread, setIsCreatingThread] = useState<boolean>(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [openThreadBuilder, setOpenThreadBuilder] = useState(false);
   const [customerInput, setCustomerInput] = useState("");
@@ -40,15 +52,13 @@ const Home = () => {
   };
 
   const handleCreateThread = async () => {
+    setIsCreatingThread(true);
     await CreateThread({ threadName: threadTitle, userId: "user_123" });
+    getAllThreads();
+
     setThreadTitle("");
     handleCloseThreadBuilder();
-  };
-
-  const handleScrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current?.scrollTo(0, messagesEndRef.current?.scrollHeight);
-    }
+    setIsCreatingThread(false);
   };
 
   const sendMessageToThread = async () => {
@@ -70,65 +80,44 @@ const Home = () => {
   };
 
   const getThreadMessages = useCallback(async () => {
+    setIsGettingThreadMessages(true);
     const messages = await GetThreadMessages(currentThread);
     setCurrentThreadMessages(messages.reverse());
+    setIsGettingThreadMessages(false);
     handleScrollToBottom();
   }, [currentThread]);
 
-  const formatDate = (dateString: number) => {
-    return new Date(dateString).toLocaleString();
+  const getAllThreads = async () => {
+    setLoadingThreads(true);
+    const threads = await GetAllThreads();
+
+    setCurrentUserThreads(threads);
+    setLoadingThreads(false);
   };
 
-  const renderMessageContent = (content: IMessageContent[]) => {
-    return content.map((item, index) => (
-      <Box key={index} mt={2}>
-        {item.text.value.split("\n").map((line, idx) => (
-          <Box
-            key={idx}
-            dangerouslySetInnerHTML={{
-              __html: line.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>"),
-            }}
-          ></Box>
-        ))}
-      </Box>
-    ));
-  };
-
-  const renderMessages = (messages: IThreadMessage[]) => {
-    return messages.map((message) => (
-      <Box key={message.id} p={4} borderBottom="1px solid #e2e8f0">
-        <Box display="flex" justifyContent="space-between" fontWeight="bolder">
-          <Box display="flex" alignItems="center">
-            <Avatar
-              name={message.role === "assistant" ? "Sonora AI" : "Customer"}
-              size="sm"
-              src={
-                message.role === "assistant"
-                  ? ""
-                  : "https://bit.ly/prosper-baba"
-              }
-            />
-            <Text ml={2}>
-              {message.role === "assistant" ? "Sonora 🤖" : "Customer"}
-            </Text>
-          </Box>
-          <span style={{ fontSize: "10px", color: "gray" }}>
-            {formatDate(message.created_at)}
-          </span>
-        </Box>
-        {renderMessageContent(message.content)}
-      </Box>
-    ));
+  const handleScrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current?.scrollTo(0, messagesEndRef.current?.scrollHeight);
+    }
   };
 
   useEffect(() => {
-    getThreadMessages();
-  }, [getThreadMessages, messagesEndRef.current]);
+    if (currentThread.length) {
+      getThreadMessages();
+    } else {
+      setCurrentThreadMessages([]);
+    }
+  }, [currentThread, getThreadMessages]);
+
+  useEffect(() => {
+    getAllThreads();
+  }, []);
 
   return (
     <>
       <Dialog
         open={openThreadBuilder}
+        isLoading={isCreatingThread}
         title={"Create new Thread"}
         primaryButtonText={"Create"}
         secondaryButtonText={"Cancel"}
@@ -143,24 +132,14 @@ const Home = () => {
         />
       </Dialog>
       <Box h="100vh" display="flex" bgColor="#F8F6F1">
-        <Box
-          w="350px"
-          m={5}
-          bgColor="#3F4543"
-          borderRadius="20px"
-          display="flex"
-          flexDirection="column"
-        >
-          <Box display="flex" justifyContent="center" p={5}>
-            <Button
-              w="100%"
-              colorScheme="primary"
-              onClick={handleOpenThreadBuilder}
-            >
-              Create thread
-            </Button>
-          </Box>
-        </Box>
+        <ThreadList
+          threads={currentUserThreads}
+          isLoading={loadingThreads}
+          handleOpenThreadBuilder={handleOpenThreadBuilder}
+          currentThread={currentThread}
+          setCurrentThread={setCurrentThread}
+          handleReloadThreads={getAllThreads}
+        />
         <Box
           m={5}
           flex="1"
@@ -171,7 +150,7 @@ const Home = () => {
         >
           <Box flex="1" overflowY="auto" ref={messagesEndRef}>
             {currentThreadMessages.length > 0 ? (
-              <>{renderMessages(currentThreadMessages)}</>
+              <MessageContainer messageList={currentThreadMessages} />
             ) : (
               <SonoraInfo />
             )}

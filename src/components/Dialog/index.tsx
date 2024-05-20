@@ -11,6 +11,7 @@ import {
 
 interface IDialogProps {
   open: boolean;
+  isLoading: boolean;
   title: string;
   children: React.ReactNode;
   primaryButtonText: string;
@@ -25,6 +26,7 @@ const Index: React.FC<IDialogProps> = (props) => {
     open,
     title,
     children,
+    isLoading,
     primaryButtonAction,
     primaryButtonText,
     secondaryButtonAction,
@@ -51,7 +53,13 @@ const Index: React.FC<IDialogProps> = (props) => {
             <Button ref={cancelRef} onClick={secondaryButtonAction}>
               {secondaryButtonText}
             </Button>
-            <Button colorScheme="primary" onClick={primaryButtonAction} ml={3}>
+            <Button
+              colorScheme="primary"
+              isLoading={isLoading}
+              loadingText={"Building thread"}
+              onClick={primaryButtonAction}
+              ml={3}
+            >
               {primaryButtonText}
             </Button>
           </AlertDialogFooter>
