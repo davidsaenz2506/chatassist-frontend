@@ -5,11 +5,9 @@ import {
   Box,
   Button,
   Input,
-  Text,
   InputGroup,
   InputRightElement,
   Spinner,
-  Image,
 } from "@chakra-ui/react";
 
 import { IThreadMessage } from "@/domain/entities/message";
@@ -19,8 +17,6 @@ import SonoraInfo from "../components/SonoraInfo";
 import Dialog from "../components/Dialog";
 import ThreadList from "../components/Home/ThreadList";
 import MessageContainer from "@/components/Home/MessageContainer";
-
-import SonoraGif from "../../public/sonora-loading.gif";
 
 import CreateThread from "./api/thread/create/route";
 import GetThreadMessages from "./api/thread/getThreadMessages/route";
@@ -172,6 +168,7 @@ const Home = () => {
                   size="md"
                   borderRadius="15px"
                   onClick={sendMessageToThread}
+                  isDisabled={!customerInput.length || !currentThread.length}
                 >
                   {isSendingMessage ? <Spinner /> : "Send"}
                 </Button>
