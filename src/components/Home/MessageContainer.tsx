@@ -48,7 +48,7 @@ const MessageContainer: React.FC<IMessageContainerProps> = ({
             </Text>
           </Box>
           <span style={{ fontSize: "10px", color: "gray" }}>
-            {formatDate(message.created_at)}
+            {formatDate(message.created_at * 1000)}
           </span>
         </Box>
         {renderMessageContent(message.content)}
